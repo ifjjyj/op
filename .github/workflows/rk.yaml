@@ -1,0 +1,108 @@
+a: &a {type: url-test, interval: 3600, tolerance: 50, url: 'https://www.gstatic.com/generate_204', lazy: true}
+j: &j {type: http, interval: 86400, override: { client-fingerprint: chrome }, health-check: { enable: true, url: 'https://www.gstatic.com/generate_204', interval: 3600 } }
+r: &r {type: select, proxies: ["at", "hk", "jp", "us"]}
+n: &n [223.5.5.5, 119.29.29.19, 192.168.1.1]
+p: &p [exx, fjj, ovv, ouu, bxx]
+d: &d {type: http, format: mrs, interval: 86400, behavior: domain}
+i: &i {type: http, format: mrs, interval: 86400, behavior: ipcidr}
+proxy-providers:
+  exx: { <<: *j, url: "https://exx.xx.kg:296/a", path: ./exx.yaml }
+  fjj: { <<: *j, url: "https://fjj.xx.kg:296/a", path: ./fjj.yaml }
+  ovv: { <<: *j, url: "https://ovv.xx.kg:296/a", path: ./ovv.yaml }
+  ouu: { <<: *j, url: "https://ouu.xx.kg:296/a", path: ./ouu.yaml }
+  bxx: { <<: *j, url: "https://bxx.xx.kg:296/a", path: ./bxx.yaml }
+port: 8080
+socks-port: 1080
+mixed-port: 7890
+redir-port: 7891
+tproxy-port: 7892
+allow-lan: true
+bind-address: "*"
+mode: rule
+log-level: warning
+ipv6: true
+external-controller: 0.0.0.0:9090
+external-ui: "ui"
+external-ui-url: "https://github.com/Zephyruso/zashboard/releases/latest/download/dist-cdn-fonts.zip"
+secret: "14285700"
+unified-delay: true
+tcp-concurrent: true
+find-process-mode: off
+keep-alive-interval: 15
+profile:
+  store-selected: true
+  store-fake-ip: true
+  tcp-keep-alive-idle: 600 
+  tcp-keep-alive-interval: 15
+sniffer: { enable: true,  parse-pure-ip: true,  sniff: {HTTP: {ports: [80, 8080-8880], override-destination: false},  TLS: {ports: [443, 8443]},  QUIC: {ports: [443, 8443]}},  skip-domain: ["+.apple.com", "play.google.com", "+.googleapis.com", "+.gvt1.com", "+.gvt2.com", "+.gvt3.com", "+.xn--ngstr-lra8j.com"]}
+tun:
+  enable: false
+  stack: system
+  device: nikki
+  auto-route: true
+  auto-detect-interface: true
+  dns-hijack: [any:53]
+  mtu: 1500
+  gso: true
+  gro: true
+  strict-route: false
+  endpoint-independent-nat: true
+  udp-timeout: 600
+dns:
+  enable: true
+  respect-rules: true
+  listen: 0.0.0.0:1053
+  ipv6: true
+  prefer-h3: true
+  cache-algorithm: arc
+  use-hosts: true
+  use-system-hosts: true
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/15
+  fake-ip-filter: ["rule-set:private", "rule-set:cn", "+.msftconnecttest.com", "+.msftncsi.com", "+.xx.kg", "+.cloudflare.dev", "+.cloudflare.com"]
+  default-nameserver: *n
+  proxy-server-nameserver: *n
+  nameserver-policy: {"rule-set:private": 10.0.0.1, "rule-set:cn": *n, "+.xx.kg": *n}
+  nameserver:
+    - https://dns.google/dns-query
+    - https://cloudflare-dns.com/dns-query
+    - https://dns11.quad9.net/dns-query
+    - https://dns.adguard-dns.com/dns-query
+proxy-groups:
+  - {name: "ai", <<: *r}
+  - {name: "tv", <<: *r}
+  - {name: "dd", <<: *r}
+  - {name: "hk", <<: *a, filter: "(?i)港|hk", use: *p}
+  - {name: "jp", <<: *a, filter: "(?i)日|jp", use: *p}
+  - {name: "us", <<: *a, filter: "(?i)美|us", use: *p}
+  - {name: "at", <<: *a, use: *p}
+rules:
+  - AND,((NETWORK,UDP),(DST-PORT,3478)),REJECT
+  - AND,((NETWORK,UDP),(DST-PORT,19302)),REJECT
+  - DOMAIN-KEYWORD,stun,REJECT
+  - DOMAIN-KEYWORD,turn,REJECT
+  - DOMAIN-SUFFIX,xx.kg,DIRECT
+  - RULE-SET,adrules,REJECT
+  - RULE-SET,openai,ai
+  - RULE-SET,anthropic,ai
+  - RULE-SET,gemini,ai
+  - RULE-SET,hulu,tv
+  - RULE-SET,tiktok,tv
+  - RULE-SET,google,dd
+  - RULE-SET,private,DIRECT
+  - RULE-SET,cn,DIRECT
+  - RULE-SET,private_ip,DIRECT
+  - RULE-SET,cn_ip,DIRECT
+  - MATCH,dd
+rule-providers:
+  adrules:      { <<: *d, url: "https://adrules.top/adrules-mihomo.mrs", path: ./adrules.mrs }
+  private:      { <<: *d, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.mrs", path: ./private.mrs }
+  google:       { <<: *d, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google.mrs", path: ./google.mrs }
+  private_ip:   { <<: *i, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/private.mrs", path: ./private_ip.mrs }
+  openai:       { <<: *d, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/openai.mrs", path: ./openai.mrs }
+  anthropic:    { <<: *d, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/anthropic.mrs", path: ./anthropic.mrs }
+  gemini:       { <<: *d, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google-gemini.mrs", path: ./gemini.mrs }
+  hulu:         { <<: *d, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/hulu.mrs", path: ./hulu.mrs }
+  tiktok:       { <<: *d, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/tiktok.mrs", path: ./tiktok.mrs }
+  cn:           { <<: *d, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.mrs", path: ./cn.mrs }
+  cn_ip:        { <<: *i, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.mrs", path: ./cn_ip.mrs }
